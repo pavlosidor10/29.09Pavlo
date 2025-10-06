@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 public class GameEvent
@@ -16,12 +16,15 @@ public class GameEvent
     {
         return new List<GameEvent>
         {
-            new GameEvent("Знайдено 20 золота!", p => p.Gold += 20),
-            new GameEvent("Знайдено зілля: +10 HP", p => p.Heal(10)),
-            new GameEvent("Мудрець підвищив ваш інтелект!", p => p.Intelligence++),
-            new GameEvent("Невдача! Втрачено 10 золота", p => p.Gold = Math.Max(0, p.Gold - 10)),
-            new GameEvent("Гоблін вкрав ваше зілля (-5 HP)", p => p.TakeDamage(5)),
-            
+            new GameEvent("Ви знайшли скриню зі скарбами! Отримуєте 50 золота.", player => player.Gold += 50),
+            new GameEvent("Ви натрапили на пастку! Втрачаєте 20 здоров'я.", player => player.Health -= 20),
+            new GameEvent("Ви знайшли цілющий еліксир! Відновлюєте 30 здоров'я.", player => player.Health += 30),
+            new GameEvent("Ви потрапили в засідку! Втрачаєте 15 золота.", player => player.Gold = Math.Max(0, player.Gold - 15)),
+            new GameEvent("Ви знайшли стародавній артефакт! Отримуєте 100 золота.", player => player.Gold += 100),
+            new GameEvent("Ви потрапили в засідку! Втрачаєте 25 здоров'я.", player => player.Health -= 25),
+            new GameEvent("Ви знайшли цілющий еліксир! Відновлюєте 40 здоров'я.", player => player.Health += 40),
+            new GameEvent("Почався чарівний дощ.Ви отримали Ману",player=>player.Mana+=20),
+            new GameEvent("Ви знайшли зілля мани! Отримуєте 50 мани.", player => player.Mana += 50)
         };
     }
 }

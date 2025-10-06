@@ -1,8 +1,5 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
-using System.Collections.Generic;
-using RPGGame;
-using RPGGame.Forms;
 
 
 namespace RPGGame.Forms
@@ -10,98 +7,159 @@ namespace RPGGame.Forms
     public partial class MainForm : Form
     {
         private Player player;
-        private TextBox txtLog;
-        private Button btnNextTurn;
-        private Label lblStats;
 
         public MainForm()
         {
             InitializeComponent();
-            CreatePlayer();  // Створення гравця
-            SetupUI();
-            UpdateStats();
+            CreatePlayer();
         }
 
         private void CreatePlayer()
         {
-            // Просте створення гравця — можна додати форму вибору класу
-            player = new Player("Гравець", 5, 5, 5, 5);
-        }
 
-        private void SetupUI()
-        {
-            this.Text = "RPG Гра";
-            this.Width = 600;
-            this.Height = 500;
+            player = new Player("Принц", 200, 100, 100, 50, 120, 1000);
+            listBox1.Items.Add($"Вітаю у грі!:{player.Name}");
+            listBox1.Items.Add($"Здоров'я:{player.MaxHealth}, Сила: {player.Strength},Витривалість: {player.Endurance}, Спритність{player.Agility}, Інтелект: {player.Intelligence}, Золото: {player.Gold},Мана:{player.Mana}");
 
-            lblStats = new Label() { Left = 10, Top = 10, Width = 560, Height = 100 };
-            btnNextTurn = new Button() { Text = "Наступний хід", Left = 10, Top = 120, Width = 150 };
-            btnNextTurn.Click += BtnNextTurn_Click;
-
-            txtLog = new TextBox() { Left = 10, Top = 160, Width = 560, Height = 280, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical };
-
-            this.Controls.Add(lblStats);
-            this.Controls.Add(btnNextTurn);
-            this.Controls.Add(txtLog);
-        }
-
-        private void BtnNextTurn_Click(object sender, EventArgs e)
-        {
-            string logText = GameManager.NextTurn(player, out object result);
-
-            if (result is GameEvent gameEvent)
-            {
-                AppendLog(logText);
-            }
-            else if (result is Enemy enemy)
-            {
-                AppendLog(logText);
-                using (CombatForm combatForm = new CombatForm(player, enemy))
-                {
-                    combatForm.ShowDialog();
-                }
-            }
-            else if (result is List<Weapon> weapons)
-            {
-                AppendLog("Магазин зброї! (Відображення магазину вимкнено)");
-                
-            }
-            else if (result is List<Armor> armors)
-            {
-                AppendLog("Магазин броні! (Відображення магазину вимкнено)");
-                
-            }
-            else
-            {
-                AppendLog(logText);
-            }
-
-            UpdateStats();
-        }
-
-        private void AppendLog(string message)
-        {
-            txtLog.AppendText(message + Environment.NewLine);
-        }
-
-            private void UpdateStats()
-        {
-            player.Mana = Math.Min(player.Mana + 1, player.MaxMana); 
-            player.Gold += 5;
-            player.Experience += 10;
-            player.Level = Math.Max(1, player.Level);
-            
-            player.Health = Math.Min(player.Health + 1, player.MaxHealth); 
-            lblStats.Text =
-                $"Ім’я: {player.Name} | Рівень: {player.Level} | XP: {player.Experience}/{player.Level}\n" +
-                $"Здоров’я: {player.Health}/{player.MaxHealth} | Мана: {player.Mana}/{player.MaxMana} | Золото: {player.Gold}\n" +
-                $"Сила: {player.Strength}, Витривалість: {player.Endurance}, Спритність: {player.Agility}, Інтелект: {player.Intelligence}\n" +
-                $"Зброя: {(player.Weapon?.Name ?? "Немає")} | Броня: {(player.Armor?.Name ?? "Немає")}";
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
 
         }
+
+
+        private void buttonShop_Click(object sender, EventArgs e)
+        {
+            listBox1.Items.Clear();
+            Shop shop = new Shop();
+            shop.GenerateItems();
+            DialogResult result = MessageBox.Show("Вітаю у магазині!.Бажаєте щось придбати","Shop",MessageBoxButtons.YesNo,MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            { 
+                listBox1.Items.Add("Доступні товари в магазині:");
+                foreach (var item in shop.Items)
+                {
+                    listBox1.Items.Add($"{item.Name} - {item.Price} золота");
+                }
+
+                Item boughtItem = shop.BuyRandomItem(player);
+
+                if (boughtItem != null)
+                {
+                    listBox1.Items.Add($"{player.Name} купив  товар: {boughtItem.Name} за {boughtItem.Price} золота.");
+                    listBox1.Items.Add($"Залишок золота: {player.Gold}");
+                    if (boughtItem.Name == "Sword" || boughtItem.Name == "Axe" || boughtItem.Name == "Bow")
+                    {
+                        player.Weapon = new Weapon
+                        {
+                            Name = boughtItem.Name,
+                            Price = boughtItem.Price,
+                            AttackBonus = boughtItem.Bonus
+                        };
+                        listBox1.Items.Add($"{player.Name} отримав зброю: {player.Weapon}");
+                        Weapon wItem = player.Weapon;
+                    }
+                    else if (boughtItem.Name == "Shield" || boughtItem.Name == "Helmet" ||
+                             boughtItem.Name == "Metal Armor" || boughtItem.Name == "Wooden Armor")
+                    {
+                        player.Armor = new Armor
+                        {
+                            Name = boughtItem.Name,
+                            Price = boughtItem.Price,
+                            DefenseBonus = boughtItem.Bonus
+                        };
+                        listBox1.Items.Add($"{player.Name} отримав броню: {player.Armor}");
+
+                    }
+                    else if (boughtItem.Name == "Health Potion")
+                    {
+                        player.Health = Math.Min(player.MaxHealth, player.Health + boughtItem.Bonus);
+                        listBox1.Items.Add($"{player.Name} купив зілля здоров'я. Здоров'я відновлено до {player.Health}.");
+                    }
+                    else if (boughtItem.Name == "Mana Potion")
+                    {
+                        player.Mana = Math.Min(player.MaxMana, player.Mana + boughtItem.Bonus);
+                        listBox1.Items.Add($"{player.Name} купив зілля мани. Мана відновлена до {player.Mana}.");
+                    }
+                }
+                else
+                {
+                    listBox1.Items.Add($"{player.Name} не вистачає золота на покупку.");
+                }
+            }
+            else
+            {
+                listBox1.Items.Add("Ви вийшли з магазину.");
+            }
+            listBox1.Items.Add($"Здоров'я: {player.Health}, Сила: {player.Strength}, Витривалість: {player.Endurance}, Спритність: {player.Agility}, Інтелект: {player.Intelligence}, Золото: {player.Gold}, Мана: {player.Mana}");
+
+        }
+        private void buttonFight_Click(object sender, EventArgs e)
+        {
+            listBox1.Items.Clear();
+            var events = GameEvent.GenerateEvents();
+            var random = new Random();
+            var gameEvent = events[random.Next(events.Count)];
+
+            listBox1.Items.Add("Подорож...");
+            listBox1.Items.Add(" Подія: " + gameEvent.Description);
+
+            gameEvent.ApplyEffect(player);
+
+            listBox1.Items.Add($" Здоров'я: {player.Health}, 🪙 Золото: {player.Gold}");
+
+            if (random.NextDouble() < 0.3) 
+            {
+                listBox1.Items.Add("Виник ворог!");
+
+                Enemy enemy = Enemy.GenerateEnemy(player.Level);
+                enemy.Health = enemy.MaxHealth; 
+
+                CombatForm combatForm = new CombatForm(player, enemy);
+                combatForm.ShowDialog();
+
+                listBox1.Items.Add($" Бій завершено. Здоров'я: {player.Health}, Золото: {player.Gold}");
+            }
+            else
+            {
+                listBox1.Items.Add(" Подорож завершена без бою.");
+            }
+            listBox1.Items.Add($"Здоров'я: {player.Health}, Сила: {player.Strength}, Витривалість: {player.Endurance}, Спритність: {player.Agility}, Інтелект: {player.Intelligence}, Золото: {player.Gold}, Мана: {player.Mana}");
+        }
+         
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            listBox1.Items.Clear();
+            bool hasWeapons = Weapon.AllWeapons.Count > 0;
+            bool hasArmors = Armor.AllArmors.Count > 0;
+            if (!hasWeapons && !hasArmors)
+            {
+                listBox1.Items.Add("У вас в інвентарі порожньо.");
+                return;
+            }
+
+            if (hasWeapons)
+            {
+                listBox1.Items.Add("Уся зброя:");
+                foreach (var weapon in Weapon.AllWeapons)
+                {
+                    listBox1.Items.Add(weapon.ToString());
+                }
+            }
+
+            if (hasArmors)
+            {
+                listBox1.Items.Add(" Уся броня:");
+                foreach (var armor in Armor.AllArmors)
+                {
+                    listBox1.Items.Add(armor.ToString());
+                }
+            }
+            listBox1.Items.Add($"Здоров'я: {player.Health}, Сила: {player.Strength}, Витривалість: {player.Endurance}, Спритність: {player.Agility}, Інтелект: {player.Intelligence}, Золото: {player.Gold}, Мана: {player.Mana}");
+        }
+
+      
     }
 }

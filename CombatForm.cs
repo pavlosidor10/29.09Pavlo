@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows.Forms;
 
 public partial class CombatForm : Form
@@ -15,7 +15,7 @@ public partial class CombatForm : Form
     private Button btnHeal;
 
     private bool playerDefending = false;
-
+    private bool enemyDefending = false; 
     public CombatForm(Player player, Enemy enemy)
     {
         this.player = player;
@@ -33,7 +33,16 @@ public partial class CombatForm : Form
         lblPlayerStats = new Label() { Left = 10, Top = 10, Width = 280, Height = 80 };
         lblEnemyStats = new Label() { Left = 300, Top = 10, Width = 280, Height = 80 };
 
-        txtCombatLog = new TextBox() { Left = 10, Top = 100, Width = 560, Height = 200, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical };
+        txtCombatLog = new TextBox()
+        {
+            Left = 10,
+            Top = 100,
+            Width = 560,
+            Height = 200,
+            Multiline = true,
+            ReadOnly = true,
+            ScrollBars = ScrollBars.Vertical
+        };
 
         btnAttack = new Button() { Text = "Атака", Left = 10, Top = 320 };
         btnPowerAttack = new Button() { Text = "Сильна атака", Left = 100, Top = 320 };
@@ -42,7 +51,12 @@ public partial class CombatForm : Form
 
         btnAttack.Click += (s, e) => PlayerAttack(1.0);
         btnPowerAttack.Click += (s, e) => PlayerAttack(1.5);
-        btnDefend.Click += (s, e) => { playerDefending = true; AppendLog("Гравець обороняється!"); EnemyTurn(); };
+        btnDefend.Click += (s, e) =>
+        {
+            playerDefending = true;
+            AppendLog("Гравець обороняється!");
+            EnemyTurn();
+        };
         btnHeal.Click += (s, e) => { PlayerHeal(); };
 
         this.Controls.Add(lblPlayerStats);
@@ -57,33 +71,38 @@ public partial class CombatForm : Form
 
     private void PlayerAttack(double multiplier)
     {
-        Random rnd = new Random();
-        int baseDmg = player.CalculateAttackPower();
-        if (rnd.NextDouble() < player.CriticalChance / 100)
+        if (player.Health <= 0)
         {
-            baseDmg *= 2;
-            AppendLog("Критичний удар!");
+            AppendLog("Гравець вже повалений і не може атакувати.");
+            return;
         }
-
-        int dmg = (int)(baseDmg * multiplier) - enemy.Defense;
-        if (dmg < 1) dmg = 1;
-        enemy.Health -= dmg;
-
-        AppendLog($"Гравець наносить {dmg} шкоди ворогу.");
 
         if (enemy.Health <= 0)
         {
-            AppendLog($"Перемога! Отримано {enemy.RewardXP} XP і {enemy.RewardGold} золота.");
-            player.GainExperience(enemy.RewardXP);
-            player.Gold += enemy.RewardGold;
-            this.Close();
-        }
-        else
-        {
-            EnemyTurn();
+            AppendLog("Ворог вже повалений.");
+            return;
         }
 
+        int attackPower = (int)(player.CalculateAttackPower() * multiplier);
+
+        int defense = enemy.CalculateDefense();
+        int damage = Math.Max(0, attackPower - defense);
+
+        enemy.Health -= damage;
+        AppendLog($"Гравець завдав {damage} шкоди ворогу.");
+
+        if (enemy.Health <= 0)
+        {
+            AppendLog("Ворог повалений! Ви перемогли!");
+            DisableButtons();
+            UpdateStats();
+            return;
+        }
+        EnemyTurn();
+
         UpdateStats();
+
+        playerDefending = false;
     }
 
     private void PlayerHeal()
@@ -91,40 +110,61 @@ public partial class CombatForm : Form
         if (player.Mana >= 10)
         {
             player.Mana -= 10;
-            player.Heal(15);
-            AppendLog("Гравець відновив 15 HP.");
+            int healAmount = 15;
+            player.Health = Math.Min(player.MaxHealth, player.Health + healAmount);
+            AppendLog($"Гравець відновив {healAmount} здоров'я.");
+            EnemyTurn();
+            UpdateStats();
         }
         else
         {
             AppendLog("Недостатньо мани!");
         }
-
-        EnemyTurn();
-        UpdateStats();
     }
 
     private void EnemyTurn()
     {
-        int damage = enemy.Attack - player.CalculateDefense();
-        if (playerDefending)
+        if (enemy.Health <= 0) return;
+
+        Random random = new Random();
+        int action = random.Next(100);
+
+        if (action < 50) 
         {
-            damage /= 2;
-            playerDefending = false;
+            int attackPower = enemy.Attack;
+            int defense = player.CalculateDefense();
+
+            if (playerDefending)
+            {
+                defense += 20;
+            }
+
+            int damage = Math.Max(0, attackPower - defense);
+            player.Health -= damage;
+
+            AppendLog($"Ворог атакує та завдає {damage} шкоди гравцю.");
         }
-
-        if (damage < 1) damage = 1;
-
-        player.TakeDamage(damage);
-        AppendLog($"Ворог наносить {damage} шкоди.");
+        else
+        {
+            AppendLog("Ворог обороняється (нічого не робить цього ходу).");
+        }
 
         if (player.Health <= 0)
         {
-            AppendLog("Поразка! Ви загинули.");
-            MessageBox.Show("Ви загинули!", "Кінець гри");
-            Application.Exit(); // або Close();
+            AppendLog("Гравець повалений! Бій завершено.");
+            DisableButtons();
         }
 
-        UpdateStats();
+        playerDefending = false;
+    }
+
+
+    private void DisableButtons()
+    {
+        btnAttack.Enabled = false;
+        btnPowerAttack.Enabled = false;
+        btnDefend.Enabled = false;
+        btnHeal.Enabled = false;
     }
 
     private void AppendLog(string text)
@@ -134,7 +174,19 @@ public partial class CombatForm : Form
 
     private void UpdateStats()
     {
-        lblPlayerStats.Text = $"Гравець\nHP: {player.Health}/{player.MaxHealth}\nMana: {player.Mana}/{player.MaxMana}";
-        lblEnemyStats.Text = $"Ворог: {enemy.Name}\nHP: {enemy.Health}/{enemy.MaxHealth}";
+        lblPlayerStats.Text =
+            $"Гравець: {player.Name}\n" +
+            $"Рівень: {player.Level}\n" +
+            $"Здоров'я: {player.Health} / {player.MaxHealth}\n" +
+            $"Мана: {player.Mana} / {player.MaxMana}\n" +
+            $"Золото: {player.Gold}\n" +
+            $"Зброя: {(player.Weapon != null ? player.Weapon.ToString() : "Немає")}\n" +
+            $"Броня: {(player.Armor != null ? player.Armor.ToString() : "Немає")}";
+
+        lblEnemyStats.Text =
+            $"Ворог: {enemy.Name}\n" +
+            $"Рівень: {enemy.Level}\n" +
+            $"Здоров'я: {enemy.Health} / {enemy.MaxHealth}\n" +
+            $"Атака: {enemy.Attack}";
     }
 }

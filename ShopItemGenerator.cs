@@ -1,40 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
-using RPGGame.Forms;
-
-public static class ShopForm
+public class Item
 {
-    
-    
-
-
-    private static Random rnd = new Random();
-    private static string[] weaponNames = { "Меч", "Кинджал", "Сокира", "Молот" };
-    private static string[] armorNames = { "Кираса", "Щит", "Шолом", "Броня" };
-
-    public static List<Weapon> GenerateWeapons(int count)
+    public string Name =null;
+    public int Price = 0;
+    public int Bonus = 0;
+    public Item(string name, int price, int bonus)
     {
-        var list = new List<Weapon>();
-        for (int i = 0; i < count; i++)
-        {
-            var name = weaponNames[rnd.Next(weaponNames.Length)];
-            int bonus = rnd.Next(1, 6);
-            int price = bonus * 25;
-            list.Add(new Weapon { Name = name, AttackBonus = bonus, Price = price });
-        }
-        return list;
+        Name = name;
+        Price = price;
+        Bonus = bonus;
+    }
+}
+public class Shop
+{
+    public List<Item> Items;
+
+    public Shop()
+    {
+        Items = new List<Item>();
     }
 
-    public static List<Armor> GenerateArmors(int count)
+    public void GenerateItems()
     {
-        var list = new List<Armor>();
-        for (int i = 0; i < count; i++)
-        {
-            var name = armorNames[rnd.Next(armorNames.Length)];
-            int bonus = rnd.Next(1, 6);
-            int price = bonus * 20;
-            list.Add(new Armor { Name = name, DefenseBonus = bonus, Price = price });
-        }
-        return list;
+        Items.Clear();
+        Items.Add(new Item("Sword", 150, 50));
+        Items.Add(new Item("Axe", 120, 20));
+        Items.Add(new Item("Bow", 170, 60));
+        Items.Add(new Item("Shield", 75, 50));
+        Items.Add(new Item("Helmet", 50, 5));
+        Items.Add(new Item("Metal Armor", 200, 100));
+        Items.Add(new Item("Wooden Armor", 100, 70));
+        Items.Add(new Item("Health Potion", 30, 50));
+        Items.Add(new Item("Mana Potion", 25, 30));
     }
+
+    public Item BuyRandomItem(Player player)
+    {
+        if (Items.Count == 0) return null;
+
+        Random random = new Random();
+        Item item = Items[random.Next(Items.Count)];
+
+        if (player.Gold < item.Price)
+        {
+            return null;
+        }
+
+        player.Gold -= item.Price;
+
+        if (item.Name == "Sword" || item.Name == "Axe" || item.Name == "Bow")
+        {
+            Weapon weapon = new Weapon(item.Name, item.Price, item.Bonus);
+        }
+        else if (item.Name == "Shield" || item.Name == "Helmet" ||
+                 item.Name == "Metal Armor" || item.Name == "Wooden Armor")
+        {
+            Armor armor = new Armor(item.Name, item.Price, item.Bonus);
+        }
+        else if (item.Name == "Health Potion")
+        {
+            player.Health += 50;
+        }
+        else if (item.Name == "Mana Potion")
+        {
+            player.Mana += 30;
+        }
+
+            return item;
+    }
+
+
+
 }

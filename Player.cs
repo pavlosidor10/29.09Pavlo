@@ -1,38 +1,39 @@
-﻿public class Player
+public class Player
 {
-    public string Name;
+    public string Name = "Принц";
     public int Level = 1;
-    public int Experience = 0;
-    public int ExperienceToLevelUp => Level * 100;
+    private int Experience = 0;
+    private int ExperienceToLevelUp => Level * 100;
 
-    public int Strength;
-    public int Endurance;
-    public int Agility;
-    public int Intelligence;
+    public int Strength = 100;
+    public int Endurance = 100;
+    public int Agility = 50;
+    public int Intelligence = 120;
 
-    public int MaxHealth => Endurance * 10;
+    public int MaxHealth = 200;
     public int MaxMana => Intelligence * 5;
     public int Health;
     public int Mana;
 
-    public int Gold;
+    public int Gold = 1000;
 
     public Weapon Weapon;
     public Armor Armor;
+    public Enemy Enemy;
 
     public double CriticalChance => Agility * 0.5;
 
-    public Player(string name, int strength, int endurance, int agility, int intelligence)
+    public Player(string name, int maxhealth, int strength, int endurance, int agility, int intelligence, int gold)
     {
-        Name = name;
+        name = Name;
+        maxhealth = MaxHealth;
+        Health = MaxHealth;
+        Mana = MaxMana;
         Strength = strength;
         Endurance = endurance;
         Agility = agility;
         Intelligence = intelligence;
-
-        Health = MaxHealth;
-        Mana = MaxMana;
-        Gold = 100;
+        gold = Gold;
     }
 
     public int CalculateAttackPower()
@@ -60,16 +61,25 @@
             Mana = MaxMana;
         }
     }
-
-    public void TakeDamage(int dmg)
+    public void CalculateGold(int amount)
     {
-        Health -= dmg;
-        if (Health < 0) Health = 0;
+        Gold += amount;
+        if (Gold < 0) Gold = 0;
+
+    }
+    public void CalculateMana(int amount)
+    {
+        Mana += amount;
+        if (Mana < 0) Mana = 0;
+        if (Mana > MaxMana) Mana = MaxMana;
+    }
+    public void CalculateDefense(int amount)
+    {
+        Endurance += amount;
+        if (Endurance < 0) Endurance = 0;
     }
 
-    public void Heal(int amount)
-    {
-        Health += amount;
-        if (Health > MaxHealth) Health = MaxHealth;
-    }
+
+
+
 }
